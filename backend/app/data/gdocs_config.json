@@ -1,0 +1,17 @@
+{
+  "documents": [
+    {
+      "name": "student_handbook",
+      "url": "https://docs.google.com/document/u/2/d/e/2PACX-1vRxGnnDCVAO3KX2CGtMIcJQuDrAasVk2JHbDxkjsGrTP5ShhZK8N6ZSPX89lexKx86QPAUswSzGLsOA/pub",
+      "last_hash": "25373cfbbfa485db7e2a3a4fc4d4bbf7be6161ef4a58c34f6ffaf6e646b5343c",
+      "last_sync": "2025-12-04T23:19:06.134182"
+    },
+    {
+      "name": "grading_document",
+      "url": "https://docs.google.com/document/d/e/2PACX-1vSBP6TJyZDklGPMyRtTwQc1cWZKOrozsOy5qmBwB8awTFvBbPN33-IxUV2WYupNdlXQOCgKwV9fDQKq/pub",
+      "last_hash": "92a852bbb3ef6c209a793148b6764a058444874cd20dfcfa91d86a86f8419dc6",
+      "last_sync": "2025-12-04T23:19:08.210695"
+    }
+  ],
+  "sync_interval_days": 7
+}
