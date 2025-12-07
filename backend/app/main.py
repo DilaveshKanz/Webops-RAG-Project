@@ -15,6 +15,8 @@ from chromadb.utils import embedding_functions
 import requests
 from dotenv import load_dotenv
 from pathlib import Path
+from fastapi.middleware.cors import CORSMiddleware
+
 
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -190,6 +192,15 @@ def query_llm(prompt: str):
         raise HTTPException(status_code=503, detail="Cannot connect to AI service")
     except Exception:
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or your frontend Space URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def run_sync():
