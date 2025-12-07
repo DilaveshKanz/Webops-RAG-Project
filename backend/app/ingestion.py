@@ -28,6 +28,15 @@ ALL_COOKIES = os.getenv("DISCOURSE_ALL_COOKIES")
 DATA_FILE = "discourse_data.json"
 SYNC_STATE_FILE = "sync_state.json"
 
+# Create a session for connection pooling (reuses SSL connections)
+session = requests.Session()
+session.headers.update({
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+})
+if ALL_COOKIES:
+    session.headers.update({"Cookie": ALL_COOKIES})
+
 
 def get_headers():
     headers = {
@@ -99,11 +108,11 @@ def fetch_posts_for_topic(topic_id, topic_slug, term_info=None):
     url = f"{BASE_URL}/t/{topic_slug}/{topic_id}.json"
     try:
         time.sleep(0.5)
-        response = requests.get(url, headers=get_headers())
+        response = session.get(url, timeout=(15, 30))
         
         if response.status_code == 429:
             time.sleep(5)
-            response = requests.get(url, headers=get_headers())
+            response = session.get(url, timeout=(15, 30))
         
         if response.status_code != 200:
             return []
@@ -132,7 +141,14 @@ def fetch_posts_for_topic(topic_id, topic_slug, term_info=None):
                 "term_priority": term_info["priority"] if term_info else 99
             })
         return cleaned
-    except Exception:
+    except requests.exceptions.Timeout:
+        print(f"  [TIMEOUT] Request timed out for topic {topic_id}")
+        return []
+    except requests.exceptions.ConnectionError as e:
+        print(f"  [CONNECTION ERROR] {e}")
+        return []
+    except Exception as e:
+        print(f"  [ERROR] fetch_posts_for_topic failed: {e}")
         return []
 
 
@@ -150,10 +166,10 @@ def fetch_posts_for_term(term_info, existing_ids=None, min_posts=500):
         url = next_page if next_page.startswith("http") else f"{BASE_URL}{next_page}"
         
         try:
-            resp = requests.get(url, headers=get_headers())
+            resp = session.get(url, timeout=(15, 30))
             if resp.status_code != 200:
                 time.sleep(10)
-                resp = requests.get(url, headers=get_headers())
+                resp = session.get(url, timeout=(15, 30))
                 if resp.status_code != 200:
                     break
             
@@ -176,10 +192,14 @@ def fetch_posts_for_term(term_info, existing_ids=None, min_posts=500):
                 if topic.get('posts_count', 0) < 2:
                     continue
                 
-                for post in fetch_posts_for_topic(topic['id'], topic.get('slug', 'topic'), term_info):
+                topic_posts = fetch_posts_for_topic(topic['id'], topic.get('slug', 'topic'), term_info)
+                for post in topic_posts:
                     if post['post_id'] not in existing_ids:
                         posts_buffer.append(post)
                         existing_ids.add(post['post_id'])
+                
+                if topic_posts:
+                    print(f"  Page {page_count + 1}: {len(posts_buffer)} posts so far...")
             
             if next_page:
                 more_url = data.get('topic_list', {}).get('more_topics_url')
@@ -190,7 +210,14 @@ def fetch_posts_for_term(term_info, existing_ids=None, min_posts=500):
                 else:
                     next_page = None
                     
-        except Exception:
+        except requests.exceptions.Timeout:
+            print(f"  [TIMEOUT] Page {page_count} timed out")
+            break
+        except requests.exceptions.ConnectionError as e:
+            print(f"  [CONNECTION ERROR] {e}")
+            break
+        except Exception as e:
+            print(f"  [ERROR] fetch_posts_for_term failed: {e}")
             break
     
     print(f"Found {len(posts_buffer)} posts")
@@ -209,6 +236,27 @@ def fetch_posts(mode="term"):
     print(f"\n{'='*50}")
     print(f"INGESTION - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {mode.upper()}")
     print(f"{'='*50}")
+    
+    # Test connection to Discourse server first
+    print(f"\nTesting connection to {BASE_URL}...")
+    try:
+        test_resp = session.get(f"{BASE_URL}/latest.json", timeout=(15, 30))
+        if test_resp.status_code == 200:
+            print(f"✓ Connected successfully (status: {test_resp.status_code})")
+        else:
+            print(f"✗ Server returned status {test_resp.status_code}")
+            if test_resp.status_code == 403:
+                print("  Hint: Your cookies may have expired. Please update DISCOURSE_ALL_COOKIES in .env")
+            return []
+    except requests.exceptions.Timeout:
+        print("✗ Connection timed out. Server may be slow or unreachable.")
+        return []
+    except requests.exceptions.ConnectionError as e:
+        print(f"✗ Connection failed: {e}")
+        return []
+    except Exception as e:
+        print(f"✗ Connection test failed: {e}")
+        return []
     
     current_term = get_term_info()
     current_term["end"] = min(current_term["end"], datetime.now(timezone.utc))
