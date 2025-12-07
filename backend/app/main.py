@@ -202,8 +202,7 @@ def run_sync():
         print(f"[SYNC ERROR] {e}")
 
 def scheduler_thread():
-    schedule.every().day.at("06:00").do(run_sync)
-    schedule.every().day.at("21:00").do(run_sync)
+    schedule.every(2).hours.do(run_sync)
     while True:
         schedule.run_pending()
         time.sleep(60)
