@@ -214,8 +214,10 @@ export default function App() {
         setIsTyping(true);
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL;
-            axios.post(`${API_URL}/ask`, {question: content});});
+            axios.post(`${import.meta.env.VITE_API_URL}/ask`, { question: content })
+            .then(res => { /* ... */ })
+            .catch(err => console.error(err));}
+
 
             const assistantMessageId = (Date.now() + 1).toString();
             const assistantMessage = {
