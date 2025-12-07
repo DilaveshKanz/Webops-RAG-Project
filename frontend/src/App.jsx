@@ -172,7 +172,7 @@ const ChatInput = ({ onSend, disabled }) => {
 const initialMessages = [
     {
         id: '1',
-        content: "Hey there! I'm ZASKY, your AI assistant for the IITM BS. Ask me anything about courses, grades, or policies, I've got everything covered!",
+        content: "Hey there! I'm ZASKY, your AI assistant for the IITM BS.",
         sender: 'assistant',
         timestamp: new Date(Date.now() - 60000 * 5),
     }
@@ -235,14 +235,14 @@ export default function App() {
 
             if (error.response) {
                 if (error.response.status === 503) {
-                    errorContent = 'The AI service is temporarily rate-limited. Please wait a moment and try again, or add your own API key in the backend .env file for higher limits.';
+                    errorContent = 'Error : The AI service is temporarily rate-limited.';
                 } else if (error.response.status === 504) {
                     errorContent = 'The request timed out. The AI service might be slow. Please try again.';
                 } else {
                     errorContent = `Server error (${error.response.status}). Please try again later.`;
                 }
             } else if (error.request) {
-                errorContent = 'Cannot connect to the backend server. Please make sure it\'s running on http://localhost:8000';
+                errorContent = 'Cannot connect to the backend server.';
             }
 
             const errorMessageId = (Date.now() + 1).toString();
